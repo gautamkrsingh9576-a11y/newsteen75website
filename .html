@@ -1,0 +1,2038 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Newspaper,
+  Compass,
+  PlayCircle,
+  Bookmark,
+  Mail,
+  ExternalLink,
+  CheckCircle2,
+  AlertCircle,
+  Menu,
+  X,
+  ArrowRight,
+  ShieldCheck,
+  FileText,
+  Globe,
+  User,
+  Copy,
+  Check,
+  Camera,
+  Code2,
+  Info,
+  ChevronRight,
+  Smartphone,
+  BookOpen,
+  Scale,
+  HelpCircle,
+  Sparkles,
+  Upload,
+  Trash2,
+  Eye
+} from 'lucide-react';
+
+// ============================================================================
+// CENTRALIZED SITE CONFIGURATION (Ready for Vercel Environment Variables)
+// ============================================================================
+const SITE_CONFIG = {
+  brandName: 'News Teen75',
+  appType: 'News Aggregator',
+  androidPackage: 'com.newsteen75.app',
+  ownerName: 'Gautam Singh',
+  ownerDesignation: 'Owner, News Teen75',
+  supportEmail: 'newsteen75@gmail.com',
+  country: 'India',
+  privacyPolicyUrl: 'https://newsteen75-privacy-policy.vercel.app/',
+  ownerPhotoPath: '/images/gautam-singh.jpg',
+  ownerPhotoAlt: 'Gautam Singh, Owner of News Teen75',
+  siteUrlPlaceholder: 'https://your-production-domain.vercel.app',
+};
+
+// ============================================================================
+// SEO METADATA PER ROUTE
+// ============================================================================
+const ROUTE_SEO = {
+  '/': {
+    title: 'News Teen75 | Discover News, Videos & Stories',
+    description:
+      'Explore News Teen75, a news aggregation app for discovering articles, videos, and stories across multiple categories.',
+    canonical: '/',
+  },
+  '/about': {
+    title: 'About Us | News Teen75 — Making News Discovery Simpler',
+    description:
+      'Learn about News Teen75, an Android news aggregation application operated by Gautam Singh in India.',
+    canonical: '/about',
+  },
+  '/contact': {
+    title: 'Contact News Teen75 | Official Support & Enquiries',
+    description:
+      'Contact Gautam Singh and the News Teen75 team at newsteen75@gmail.com for app support, corrections, or content enquiries.',
+    canonical: '/contact',
+  },
+  '/sources': {
+    title: 'News Sources & Content Transparency | News Teen75',
+    description:
+      'Understand how News Teen75 aggregates links, headlines, and videos from third-party publishers and respects original publisher rights.',
+    canonical: '/sources',
+  },
+  '/corrections': {
+    title: 'Corrections & Content Concerns | News Teen75',
+    description:
+      'Report incorrect article metadata, missing source attribution, broken links, or copyright concerns to News Teen75.',
+    canonical: '/corrections',
+  },
+  '/terms': {
+    title: 'Terms of Use | News Teen75',
+    description:
+      'Read the Terms of Use governing the News Teen75 website and Android application (com.newsteen75.app).',
+    canonical: '/terms',
+  },
+};
+
+// ============================================================================
+// REUSABLE OWNER PHOTO COMPONENT
+// Preserves original facial identity, aspect ratio, and natural proportions.
+// Never uses stock people or AI faces. Supports live local preview for owner.
+// ============================================================================
+function OwnerPortrait({ customPhotoUrl, onUploadPhoto, onClearPhoto, size = 'medium' }) {
+  const [imgError, setImgError] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        onUploadPhoto(event.target.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const activeSrc = customPhotoUrl || (!imgError ? SITE_CONFIG.ownerPhotoPath : null);
+
+  const dimensions =
+    size === 'large'
+      ? 'w-full max-w-[320px] aspect-[4/5]'
+      : 'w-40 h-48 sm:w-48 sm:h-56';
+
+  return (
+    <div className="flex flex-col items-start">
+      <div
+        className={`relative ${dimensions} rounded-lg overflow-hidden bg-[#F7F7F8] border border-[#E8E8E8] flex flex-col items-center justify-center group`}
+      >
+        {activeSrc ? (
+          <img
+            src={activeSrc}
+            alt={SITE_CONFIG.ownerPhotoAlt}
+            onError={() => setImgError(true)}
+            className="w-full h-full object-cover object-center"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center p-6 text-center select-none">
+            <div className="w-16 h-16 rounded-full bg-white border border-[#E8E8E8] flex items-center justify-center mb-3 shadow-2xs">
+              <span className="font-serif text-xl font-semibold tracking-tight text-[#151515]">
+                GS
+              </span>
+            </div>
+            <p className="text-xs font-medium text-[#151515]">
+              {SITE_CONFIG.ownerName}
+            </p>
+            <p className="text-[11px] text-[#626262] mt-0.5">
+              {SITE_CONFIG.ownerDesignation}
+            </p>
+            <span className="mt-3 inline-block px-2 py-0.5 text-[10px] font-mono bg-white border border-[#E8E8E8] rounded text-[#626262]">
+              /public/images/gautam-singh.jpg
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Subtle utility control so Gautam Singh can test his genuine photo right inside the preview */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleFileChange}
+          className="hidden"
+          aria-label="Upload original owner photograph"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#626262] hover:text-[#151515] bg-[#F7F7F8] hover:bg-[#EFEFF1] border border-[#E8E8E8] px-2.5 py-1 rounded transition-colors cursor-pointer"
+          title="Load your original photograph to preview how it renders on the live site"
+        >
+          <Camera className="w-3.5 h-3.5 text-[#E53935]" />
+          <span>{customPhotoUrl ? 'Change Original Photo' : 'Preview Your Photo'}</span>
+        </button>
+        {customPhotoUrl && (
+          <button
+            type="button"
+            onClick={onClearPhoto}
+            className="inline-flex items-center gap-1 text-xs text-[#626262] hover:text-[#E53935] px-2 py-1 rounded transition-colors cursor-pointer"
+            title="Reset photo preview"
+          >
+            <Trash2 className="w-3 h-3" />
+            <span>Reset</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ARCHITECTURAL APP STRUCTURE PREVIEW (No fake screenshots or fabricated news)
+// ============================================================================
+function AppArchitecturalPreview() {
+  return (
+    <div
+      className="w-full max-w-[360px] mx-auto bg-white border border-[#E8E8E8] rounded-2xl p-4 shadow-xs"
+      aria-label="Structural overview of the News Teen75 Android application interface"
+    >
+      {/* Top App Bar */}
+      <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#E8E8E8]">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#E53935]" />
+          <span className="font-serif font-bold text-sm tracking-tight text-[#151515]">
+            News Teen75
+          </span>
+        </div>
+        <span className="text-[10px] font-mono text-[#626262] bg-[#F7F7F8] px-2 py-0.5 rounded border border-[#E8E8E8]">
+          Android App Preview
+        </span>
+      </div>
+
+      {/* Category Filter Pills */}
+      <div className="flex items-center gap-1.5 overflow-hidden mb-4">
+        {['All', 'India', 'Technology', 'Business', 'Sports'].map((cat, idx) => (
+          <span
+            key={cat}
+            className={`text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap ${
+              idx === 0
+                ? 'bg-[#151515] text-white'
+                : 'bg-[#F7F7F8] text-[#626262] border border-[#E8E8E8]'
+            }`}
+          >
+            {cat}
+          </span>
+        ))}
+      </div>
+
+      {/* Structural Feed Module 1: Article Card Wireframe */}
+      <div className="p-3 rounded-lg bg-[#F7F7F8] border border-[#E8E8E8] mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#E53935]">
+            Category • Publisher Attribution
+          </span>
+          <Bookmark className="w-3.5 h-3.5 text-[#626262]" />
+        </div>
+        <div className="h-3 w-11/12 bg-[#E8E8E8] rounded mb-1.5" />
+        <div className="h-3 w-3/4 bg-[#E8E8E8] rounded mb-2.5" />
+        <div className="flex items-center justify-between text-[10px] text-[#626262] pt-2 border-t border-[#E8E8E8]">
+          <span>Original Source Link</span>
+          <ExternalLink className="w-3 h-3" />
+        </div>
+      </div>
+
+      {/* Structural Feed Module 2: Short-Form Video Module */}
+      <div className="p-3 rounded-lg bg-white border border-[#E8E8E8] mb-3 flex items-center gap-3">
+        <div className="w-12 h-12 rounded-lg bg-[#F7F7F8] border border-[#E8E8E8] flex items-center justify-center shrink-0">
+          <PlayCircle className="w-5 h-5 text-[#E53935]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="text-[10px] font-medium text-[#626262] block">
+            Short-Form Video Discovery
+          </span>
+          <div className="h-2.5 w-full bg-[#F7F7F8] rounded mt-1.5 border border-[#E8E8E8]" />
+          <div className="h-2.5 w-2/3 bg-[#F7F7F8] rounded mt-1 border border-[#E8E8E8]" />
+        </div>
+      </div>
+
+      {/* Bottom Navigation Bar Structure */}
+      <div className="pt-2.5 mt-2 border-t border-[#E8E8E8] grid grid-cols-4 gap-1 text-center">
+        {[
+          { icon: Newspaper, label: 'Latest' },
+          { icon: Compass, label: 'Topics' },
+          { icon: PlayCircle, label: 'Videos' },
+          { icon: Bookmark, label: 'Saved' },
+        ].map((item, i) => {
+          const IconComponent = item.icon;
+          return (
+            <div
+              key={item.label}
+              className={`flex flex-col items-center py-1 rounded ${
+                i === 0 ? 'text-[#E53935]' : 'text-[#626262]'
+              }`}
+            >
+              <IconComponent className="w-3.5 h-3.5 mb-0.5" />
+              <span className="text-[10px] font-medium">{item.label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// PAGE 1: HOME PAGE (/)
+// ============================================================================
+function HomePage({ navigate, customPhotoUrl, onUploadPhoto, onClearPhoto }) {
+  const features = [
+    {
+      icon: Newspaper,
+      title: 'Latest News',
+      description: 'Discover stories across different categories.',
+    },
+    {
+      icon: Compass,
+      title: 'Personalized Discovery',
+      description: 'Explore news based on your interests.',
+    },
+    {
+      icon: PlayCircle,
+      title: 'News Videos',
+      description: 'Watch short-form news content.',
+    },
+    {
+      icon: Bookmark,
+      title: 'Saved Stories',
+      description: 'Save articles for later reading.',
+    },
+  ];
+
+  const topics = [
+    {
+      name: 'India',
+      summary: 'National updates, regional developments, and public affairs coverage from across India.',
+    },
+    {
+      name: 'World',
+      summary: 'International events, diplomacy, and global perspectives from established publishers.',
+    },
+    {
+      name: 'Technology',
+      summary: 'Software, consumer devices, digital platforms, and emerging science stories.',
+    },
+    {
+      name: 'Business',
+      summary: 'Markets, economy, startups, and corporate developments.',
+    },
+    {
+      name: 'Sports',
+      summary: 'Cricket, athletics, tournaments, and match updates.',
+    },
+    {
+      name: 'Entertainment',
+      summary: 'Cinema, streaming, culture, and arts coverage.',
+    },
+  ];
+
+  const steps = [
+    {
+      step: '01',
+      title: 'Discover stories',
+      description:
+        'Browse a clean feed of curated headlines and video updates aggregated from multiple publishers.',
+    },
+    {
+      step: '02',
+      title: 'Explore topics',
+      description:
+        'Switch seamlessly between categories such as India, World, Technology, Business, Sports, and Entertainment.',
+    },
+    {
+      step: '03',
+      title: 'Save what matters',
+      description:
+        'Bookmark articles of interest so you can revisit and read them whenever convenient.',
+    },
+  ];
+
+  const scrollToFeatures = () => {
+    const el = document.getElementById('app-features');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  return (
+    <div>
+      {/* SECTION 2: HERO */}
+      <section className="py-16 md:py-24 border-b border-[#E8E8E8] bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div className="lg:col-span-7">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F7F7F8] border border-[#E8E8E8] mb-6">
+                <span className="w-2 h-2 rounded-full bg-[#E53935]" />
+                <span className="text-xs font-medium text-[#626262] tracking-wide uppercase">
+                  Android News Aggregator • {SITE_CONFIG.androidPackage}
+                </span>
+              </div>
+
+              <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-[#151515] tracking-tight leading-[1.12]">
+                Your News.
+                <br />
+                Your Interests.
+                <br />
+                <span className="underline decoration-[#E53935] decoration-2 underline-offset-8">
+                  One Place.
+                </span>
+              </h1>
+
+              <p className="mt-6 text-lg sm:text-xl text-[#626262] leading-relaxed max-w-2xl">
+                Discover news, explore trending topics, watch short videos, and stay connected to
+                stories that matter to you with News Teen75.
+              </p>
+
+              <div className="mt-8 flex flex-wrap items-center gap-4">
+                <button
+                  type="button"
+                  onClick={scrollToFeatures}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-[#151515] hover:bg-[#2c2c2c] text-white text-sm font-medium transition-colors cursor-pointer"
+                >
+                  <span>Explore the App</span>
+                  <ArrowRight className="w-4 h-4 text-[#E53935]" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/about')}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-white hover:bg-[#F7F7F8] text-[#151515] border border-[#E8E8E8] text-sm font-medium transition-colors cursor-pointer"
+                >
+                  <span>About News Teen75</span>
+                </button>
+              </div>
+
+              <div className="mt-10 pt-6 border-t border-[#E8E8E8] flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-[#626262]">
+                <span>
+                  Operated by <strong className="text-[#151515]">{SITE_CONFIG.ownerName}</strong>
+                </span>
+                <span>•</span>
+                <span>
+                  Support:{' '}
+                  <a
+                    href={`mailto:${SITE_CONFIG.supportEmail}`}
+                    className="text-[#151515] underline hover:text-[#E53935]"
+                  >
+                    {SITE_CONFIG.supportEmail}
+                  </a>
+                </span>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={() => navigate('/sources')}
+                  className="text-[#151515] underline hover:text-[#E53935] cursor-pointer"
+                >
+                  Source Transparency
+                </button>
+              </div>
+            </div>
+
+            <div className="lg:col-span-5">
+              <AppArchitecturalPreview />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 3: APP FEATURES */}
+      <section id="app-features" className="py-16 md:py-24 bg-[#F7F7F8] border-b border-[#E8E8E8]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl">
+            <span className="text-xs font-semibold uppercase tracking-widest text-[#E53935]">
+              Core Capabilities
+            </span>
+            <h2 className="mt-2 font-serif text-3xl sm:text-4xl font-bold text-[#151515] tracking-tight">
+              Everything You Need to Stay Informed.
+            </h2>
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feat) => {
+              const IconComponent = feat.icon;
+              return (
+                <div
+                  key={feat.title}
+                  className="bg-white border border-[#E8E8E8] rounded-xl p-6 transition-colors hover:border-[#151515]"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-[#F7F7F8] border border-[#E8E8E8] flex items-center justify-center mb-5">
+                    <IconComponent className="w-5 h-5 text-[#E53935]" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#151515]">{feat.title}</h3>
+                  <p className="mt-2 text-sm text-[#626262] leading-relaxed">{feat.description}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 4: EXPLORE TOPICS */}
+      <section className="py-16 md:py-24 bg-white border-b border-[#E8E8E8]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-widest text-[#E53935]">
+                Categories
+              </span>
+              <h2 className="mt-2 font-serif text-3xl sm:text-4xl font-bold text-[#151515] tracking-tight">
+                Explore Topics Across Key Beats
+              </h2>
+            </div>
+            <p className="text-sm text-[#626262] max-w-md">
+              Illustrative categories supported inside News Teen75 for organized browsing without
+              clutter.
+            </p>
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {topics.map((topic) => (
+              <div
+                key={topic.name}
+                className="p-6 rounded-xl bg-white border border-[#E8E8E8] flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-serif text-xl font-bold text-[#151515]">{topic.name}</h3>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E53935]" />
+                  </div>
+                  <p className="mt-3 text-sm text-[#626262] leading-relaxed">{topic.summary}</p>
+                </div>
+                <div className="mt-5 pt-4 border-t border-[#E8E8E8] flex items-center justify-between text-xs text-[#626262]">
+                  <span>Aggregated Category Feed</span>
+                  <span>News Teen75</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 5: HOW THE APP WORKS */}
+      <section className="py-16 md:py-24 bg-[#F7F7F8] border-b border-[#E8E8E8]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl">
+            <span className="text-xs font-semibold uppercase tracking-widest text-[#E53935]">
+              How It Works
+            </span>
+            <h2 className="mt-2 font-serif text-3xl sm:text-4xl font-bold text-[#151515] tracking-tight">
+              Simple, Transparent News Discovery
+            </h2>
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+            {steps.map((item) => (
+              <div
+                key={item.step}
+                className="bg-white border border-[#E8E8E8] rounded-xl p-6 relative"
+              >
+                <span className="font-mono text-xs font-bold text-[#E53935] bg-[#F7F7F8] border border-[#E8E8E8] px-2.5 py-1 rounded">
+                  STEP {item.step}
+                </span>
+                <h3 className="mt-4 text-xl font-semibold text-[#151515]">{item.title}</h3>
+                <p className="mt-2 text-sm text-[#626262] leading-relaxed">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 6: MEET THE OWNER */}
+      <section className="py-16 md:py-24 bg-white border-b border-[#E8E8E8]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-[#F7F7F8] border border-[#E8E8E8] rounded-2xl p-6 sm:p-10">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
+              <OwnerPortrait
+                customPhotoUrl={customPhotoUrl}
+                onUploadPhoto={onUploadPhoto}
+                onClearPhoto={onClearPhoto}
+                size="medium"
+              />
+
+              <div className="flex-1">
+                <span className="text-xs font-semibold uppercase tracking-widest text-[#E53935]">
+                  Ownership & Accountability
+                </span>
+                <h2 className="mt-1.5 font-serif text-2xl sm:text-3xl font-bold text-[#151515]">
+                  Meet the Person Behind News Teen75
+                </h2>
+
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-base font-semibold text-[#151515]">
+                    {SITE_CONFIG.ownerName}
+                  </span>
+                  <span className="text-[#626262]">•</span>
+                  <span className="text-sm text-[#626262]">{SITE_CONFIG.ownerDesignation}</span>
+                  <span className="text-[#626262]">•</span>
+                  <span className="text-sm text-[#626262]">{SITE_CONFIG.country}</span>
+                </div>
+
+                <p className="mt-4 text-base text-[#626262] leading-relaxed">
+                  News Teen75 is an initiative operated by Gautam Singh, designed to help readers
+                  discover and explore news from multiple sources in one place.
+                </p>
+
+                <div className="mt-6 flex flex-wrap items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/about')}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#151515] hover:bg-[#2c2c2c] text-white text-sm font-medium transition-colors cursor-pointer"
+                  >
+                    <span>Learn More</span>
+                    <ArrowRight className="w-4 h-4 text-[#E53935]" />
+                  </button>
+
+                  <a
+                    href={`mailto:${SITE_CONFIG.supportEmail}`}
+                    className="inline-flex items-center gap-2 text-sm font-medium text-[#151515] hover:text-[#E53935] transition-colors"
+                  >
+                    <Mail className="w-4 h-4 text-[#E53935]" />
+                    <span>{SITE_CONFIG.supportEmail}</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 7: CONTACT CTA */}
+      <section className="py-16 md:py-24 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#151515] tracking-tight">
+            Questions, Feedback or Suggestions?
+          </h2>
+          <p className="mt-4 text-base sm:text-lg text-[#626262] max-w-2xl mx-auto leading-relaxed">
+            We&apos;d love to hear from you. Reach out to the News Teen75 team for support,
+            feedback or content-related enquiries.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => navigate('/contact')}
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-[#E53935] hover:bg-[#d32f2f] text-white text-sm font-medium transition-colors cursor-pointer"
+            >
+              <Mail className="w-4 h-4" />
+              <span>Contact Us</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// ============================================================================
+// PAGE 2: ABOUT US PAGE (/about)
+// ============================================================================
+function AboutPage({ navigate, customPhotoUrl, onUploadPhoto, onClearPhoto }) {
+  return (
+    <div className="py-14 md:py-20 bg-white">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* PAGE HERO */}
+        <div className="pb-12 border-b border-[#E8E8E8]">
+          <span className="text-xs font-semibold uppercase tracking-widest text-[#E53935]">
+            ABOUT NEWS TEEN75
+          </span>
+          <h1 className="mt-3 font-serif text-4xl sm:text-5xl font-bold text-[#151515] tracking-tight">
+            Making News Discovery Simpler.
+          </h1>
+          <p className="mt-6 text-lg text-[#626262] leading-relaxed max-w-3xl">
+            News Teen75 (<code className="text-sm font-mono text-[#151515]">com.newsteen75.app</code>)
+            is an Android news aggregation application. The application helps users discover
+            articles, headlines, and short-form news videos across multiple categories in a single,
+            streamlined reading and viewing experience.
+          </p>
+          <p className="mt-4 text-base text-[#626262] leading-relaxed max-w-3xl">
+            News Teen75 operates as a news discovery and aggregation platform rather than an
+            original reporting newsroom. Stories surfaced through the application originate from
+            their respective third-party publishers.
+          </p>
+        </div>
+
+        {/* OWNER PROFILE SECTION (Desktop: Portrait Left, Bio Right | Mobile: Portrait Above Bio) */}
+        <section className="py-12 border-b border-[#E8E8E8]" aria-labelledby="owner-profile-heading">
+          <div className="mb-8">
+            <span className="text-xs font-semibold uppercase tracking-widest text-[#E53935]">
+              Ownership & Public Identity
+            </span>
+            <h2
+              id="owner-profile-heading"
+              className="mt-1.5 font-serif text-2xl sm:text-3xl font-bold text-[#151515]"
+            >
+              Owner Profile
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-start bg-[#F7F7F8] border border-[#E8E8E8] rounded-2xl p-6 sm:p-8">
+            {/* Left column on desktop, top on mobile */}
+            <div className="md:col-span-4 flex flex-col items-start">
+              <OwnerPortrait
+                customPhotoUrl={customPhotoUrl}
+                onUploadPhoto={onUploadPhoto}
+                onClearPhoto={onClearPhoto}
+                size="large"
+              />
+            </div>
+
+            {/* Right column on desktop, bottom on mobile */}
+            <div className="md:col-span-8">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-white border border-[#E8E8E8] text-xs font-medium text-[#151515] mb-3">
+                <User className="w-3.5 h-3.5 text-[#E53935]" />
+                <span>Verified Owner Details</span>
+              </div>
+
+              <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#151515]">
+                {SITE_CONFIG.ownerName}
+              </h3>
+              <p className="text-sm font-medium text-[#626262] mt-1">
+                {SITE_CONFIG.ownerDesignation}
+              </p>
+
+              {/* Modular Owner Biography (Easy to update in code) */}
+              <div className="mt-5 space-y-4 text-base text-[#151515] leading-relaxed">
+                <p>
+                  News Teen75 is an independent digital initiative owned and operated by{' '}
+                  <strong>Gautam Singh</strong> in India. The project was built to provide Android
+                  users with a clean, organized interface for discovering news stories, category
+                  updates, and short videos from multiple sources in one place.
+                </p>
+                <p className="text-[#626262]">
+                  As the owner of News Teen75, Gautam Singh oversees the maintenance of the Android
+                  application (<code className="text-xs font-mono">com.newsteen75.app</code>),
+                  public support communications, source attribution display, and responses to user
+                  feedback or content inquiries.
+                </p>
+              </div>
+
+              {/* Structured Fact Grid */}
+              <dl className="mt-6 pt-6 border-t border-[#E8E8E8] grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div className="bg-white p-3.5 rounded-lg border border-[#E8E8E8]">
+                  <dt className="text-xs text-[#626262] uppercase tracking-wider">Owner Name</dt>
+                  <dd className="mt-1 font-semibold text-[#151515]">{SITE_CONFIG.ownerName}</dd>
+                </div>
+                <div className="bg-white p-3.5 rounded-lg border border-[#E8E8E8]">
+                  <dt className="text-xs text-[#626262] uppercase tracking-wider">Role</dt>
+                  <dd className="mt-1 font-semibold text-[#151515]">
+                    {SITE_CONFIG.ownerDesignation}
+                  </dd>
+                </div>
+                <div className="bg-white p-3.5 rounded-lg border border-[#E8E8E8]">
+                  <dt className="text-xs text-[#626262] uppercase tracking-wider">
+                    Official Support Email
+                  </dt>
+                  <dd className="mt-1 font-semibold text-[#151515]">
+                    <a
+                      href={`mailto:${SITE_CONFIG.supportEmail}`}
+                      className="text-[#E53935] underline hover:text-[#151515]"
+                    >
+                      {SITE_CONFIG.supportEmail}
+                    </a>
+                  </dd>
+                </div>
+                <div className="bg-white p-3.5 rounded-lg border border-[#E8E8E8]">
+                  <dt className="text-xs text-[#626262] uppercase tracking-wider">Country</dt>
+                  <dd className="mt-1 font-semibold text-[#151515]">{SITE_CONFIG.country}</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        </section>
+
+        {/* WHAT NEWS TEEN75 DOES & TRANSPARENCY */}
+        <section className="py-12 grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-[#E8E8E8]">
+          <div className="p-6 rounded-xl bg-white border border-[#E8E8E8]">
+            <h3 className="font-serif text-xl font-bold text-[#151515]">What News Teen75 Does</h3>
+            <p className="mt-3 text-sm text-[#626262] leading-relaxed">
+              News Teen75 organizes publicly available news items and short-form news videos by
+              topic so readers can browse current developments across categories like India, World,
+              Technology, Business, Sports, and Entertainment.
+            </p>
+          </div>
+
+          <div className="p-6 rounded-xl bg-white border border-[#E8E8E8]">
+            <h3 className="font-serif text-xl font-bold text-[#151515]">
+              How Users Discover News
+            </h3>
+            <p className="mt-3 text-sm text-[#626262] leading-relaxed">
+              Users can browse the latest feed, filter stories by topic interest, watch short news
+              videos, bookmark items for later reading, and follow external links to view full
+              articles on the original publisher&apos;s website.
+            </p>
+          </div>
+
+          <div className="p-6 rounded-xl bg-white border border-[#E8E8E8]">
+            <h3 className="font-serif text-xl font-bold text-[#151515]">
+              Third-Party Content Transparency
+            </h3>
+            <p className="mt-3 text-sm text-[#626262] leading-relaxed">
+              Aggregated articles and media remain the property and responsibility of their
+              respective original publishers. We provide clear pathways for attribution queries,
+              corrections, or removal requests.
+            </p>
+          </div>
+        </section>
+
+        {/* CONTACT INFORMATION BLOCK */}
+        <section className="pt-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div>
+            <h2 className="font-serif text-2xl font-bold text-[#151515]">
+              Get in Touch with News Teen75
+            </h2>
+            <p className="mt-1 text-sm text-[#626262]">
+              Direct all support, publisher, or policy enquiries to{' '}
+              <a
+                href={`mailto:${SITE_CONFIG.supportEmail}`}
+                className="text-[#151515] font-medium underline hover:text-[#E53935]"
+              >
+                {SITE_CONFIG.supportEmail}
+              </a>
+              .
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/contact')}
+              className="px-5 py-2.5 rounded-lg bg-[#151515] hover:bg-[#2c2c2c] text-white text-sm font-medium transition-colors cursor-pointer"
+            >
+              Visit Contact Page
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/sources')}
+              className="px-5 py-2.5 rounded-lg bg-[#F7F7F8] hover:bg-[#EFEFF1] text-[#151515] border border-[#E8E8E8] text-sm font-medium transition-colors cursor-pointer"
+            >
+              News Sources Policy
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// PAGE 3: CONTACT US PAGE (/contact) — CRITICAL COMPLIANCE REQUIREMENT
+// ============================================================================
+function ContactPage({ navigate }) {
+  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('General Enquiries');
+  const [subjectText, setSubjectText] = useState('');
+  const [messageBody, setMessageBody] = useState('');
+
+  const categories = [
+    {
+      name: 'General Enquiries',
+      desc: 'Questions or general feedback regarding the News Teen75 app or website.',
+    },
+    {
+      name: 'App Support',
+      desc: 'Technical issues, bug reports, or assistance with the Android application (com.newsteen75.app).',
+    },
+    {
+      name: 'News Corrections',
+      desc: 'Report inaccurate metadata, broken source links, or outdated article listings.',
+    },
+    {
+      name: 'Content Attribution',
+      desc: 'Enquiries regarding publisher credit, source labels, or author attribution.',
+    },
+    {
+      name: 'Copyright or Content Removal',
+      desc: 'Requests from rights holders or publishers regarding content indexing or removal.',
+    },
+  ];
+
+  const handleCopyEmail = () => {
+    navigator.clipboard?.writeText(SITE_CONFIG.supportEmail);
+    setCopiedEmail(true);
+    setTimeout(() => setCopiedEmail(false), 2500);
+  };
+
+  const composedMailtoHref = () => {
+    const finalSubject = subjectText.trim()
+      ? `[${selectedCategory}] ${subjectText.trim()}`
+      : `[News Teen75 - ${selectedCategory}] Enquiry`;
+    const finalBody = messageBody.trim()
+      ? `${messageBody.trim()}\n\n---\nCategory: ${selectedCategory}\nApplication: News Teen75 (${SITE_CONFIG.androidPackage})`
+      : `Hello Gautam Singh / News Teen75 Support,\n\nI am writing regarding: ${selectedCategory}\n\n[Please enter your details here]\n`;
+    return `mailto:${SITE_CONFIG.supportEmail}?subject=${encodeURIComponent(
+      finalSubject
+    )}&body=${encodeURIComponent(finalBody)}`;
+  };
+
+  return (
+    <div className="py-14 md:py-20 bg-white">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* HEADER */}
+        <div className="pb-10 border-b border-[#E8E8E8]">
+          <span className="text-xs font-semibold uppercase tracking-widest text-[#E53935]">
+            PUBLIC CONTACT & SUPPORT INFORMATION
+          </span>
+          <h1 className="mt-2 font-serif text-4xl sm:text-5xl font-bold text-[#151515] tracking-tight">
+            Contact News Teen75
+          </h1>
+          <p className="mt-4 text-lg text-[#626262] leading-relaxed max-w-3xl">
+            Have questions, feedback, corrections, or technical issues? Contact the News Teen75
+            team. We&apos;re here to help with enquiries related to our application.
+          </p>
+        </div>
+
+        {/* PRIMARY PUBLIC COMPLIANCE RECORD */}
+        <div className="mt-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="lg:col-span-6 bg-[#F7F7F8] border border-[#E8E8E8] rounded-2xl p-6 sm:p-8">
+            <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#E8E8E8]">
+              <h2 className="font-serif text-2xl font-bold text-[#151515]">
+                Official Contact Details
+              </h2>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-[#E8E8E8] text-[#151515]">
+                <span className="w-2 h-2 rounded-full bg-[#E53935]" />
+                Public Access
+              </span>
+            </div>
+
+            <dl className="space-y-4 text-sm">
+              <div className="bg-white p-4 rounded-xl border border-[#E8E8E8]">
+                <dt className="text-xs font-medium uppercase tracking-wider text-[#626262]">
+                  Application
+                </dt>
+                <dd className="mt-1 text-base font-semibold text-[#151515] flex items-center justify-between">
+                  <span>{SITE_CONFIG.brandName}</span>
+                  <span className="text-xs font-mono text-[#626262] bg-[#F7F7F8] px-2 py-0.5 rounded border border-[#E8E8E8]">
+                    {SITE_CONFIG.androidPackage}
+                  </span>
+                </dd>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-[#E8E8E8]">
+                <dt className="text-xs font-medium uppercase tracking-wider text-[#626262]">
+                  Owner
+                </dt>
+                <dd className="mt-1 text-base font-semibold text-[#151515]">
+                  {SITE_CONFIG.ownerName}
+                </dd>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-[#E8E8E8]">
+                <dt className="text-xs font-medium uppercase tracking-wider text-[#626262]">
+                  Support Email
+                </dt>
+                <dd className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                  <a
+                    href={`mailto:${SITE_CONFIG.supportEmail}`}
+                    className="text-base font-semibold text-[#E53935] underline hover:text-[#151515] break-all"
+                  >
+                    {SITE_CONFIG.supportEmail}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={handleCopyEmail}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-[#F7F7F8] hover:bg-[#EFEFF1] text-[#151515] border border-[#E8E8E8] transition-colors cursor-pointer"
+                  >
+                    {copiedEmail ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-green-600" />
+                        <span>Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-[#626262]" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </dd>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-[#E8E8E8]">
+                <dt className="text-xs font-medium uppercase tracking-wider text-[#626262]">
+                  Country
+                </dt>
+                <dd className="mt-1 text-base font-semibold text-[#151515]">
+                  {SITE_CONFIG.country}
+                </dd>
+              </div>
+            </dl>
+
+            {/* Primary Direct Mailto Action Button */}
+            <div className="mt-6 pt-6 border-t border-[#E8E8E8]">
+              <p className="text-xs text-[#626262] mb-3">
+                Direct Email Contact Method (No login required):
+              </p>
+              <a
+                href={`mailto:${SITE_CONFIG.supportEmail}`}
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-[#E53935] hover:bg-[#d32f2f] text-white text-sm font-medium transition-colors"
+              >
+                <Mail className="w-4 h-4" />
+                <span>Send an Email</span>
+              </a>
+            </div>
+          </div>
+
+          {/* RIGHT SIDE: CONTACT CATEGORIES & DIRECT EMAIL COMPOSER HELPER */}
+          <div className="lg:col-span-6 space-y-6">
+            <div className="bg-white border border-[#E8E8E8] rounded-2xl p-6 sm:p-8">
+              <h2 className="font-serif text-2xl font-bold text-[#151515]">Contact Categories</h2>
+              <p className="mt-1 text-sm text-[#626262]">
+                Select a topic below to see how we handle your enquiry or to open a pre-addressed
+                email in your mail client.
+              </p>
+
+              <div className="mt-5 space-y-2.5">
+                {categories.map((cat) => {
+                  const isSelected = selectedCategory === cat.name;
+                  return (
+                    <button
+                      key={cat.name}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat.name)}
+                      className={`w-full text-left p-3.5 rounded-xl border transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#F7F7F8] border-[#151515]'
+                          : 'bg-white border-[#E8E8E8] hover:bg-[#F7F7F8]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-[#151515]">{cat.name}</span>
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            isSelected ? 'bg-[#E53935]' : 'bg-[#E8E8E8]'
+                          }`}
+                        />
+                      </div>
+                      <p className="mt-1 text-xs text-[#626262] leading-relaxed">{cat.desc}</p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Optional Mailto Builder (Opens real email client—never fakes a backend submission) */}
+              <div className="mt-6 pt-6 border-t border-[#E8E8E8]">
+                <h3 className="text-sm font-semibold text-[#151515]">
+                  Prepare Email for: <span className="text-[#E53935]">{selectedCategory}</span>
+                </h3>
+                <p className="text-xs text-[#626262] mt-0.5">
+                  This helper opens your default email app addressed to{' '}
+                  <strong className="text-[#151515]">{SITE_CONFIG.supportEmail}</strong>.
+                </p>
+
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <label
+                      htmlFor="email-subject"
+                      className="block text-xs font-medium text-[#151515] mb-1"
+                    >
+                      Subject Line (Optional)
+                    </label>
+                    <input
+                      id="email-subject"
+                      type="text"
+                      value={subjectText}
+                      onChange={(e) => setSubjectText(e.target.value)}
+                      placeholder={`Regarding ${selectedCategory}...`}
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-[#E8E8E8] bg-[#F7F7F8] focus:bg-white focus:outline-none focus:border-[#151515]"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="email-body"
+                      className="block text-xs font-medium text-[#151515] mb-1"
+                    >
+                      Message Details (Optional)
+                    </label>
+                    <textarea
+                      id="email-body"
+                      rows={3}
+                      value={messageBody}
+                      onChange={(e) => setMessageBody(e.target.value)}
+                      placeholder="Include relevant details, article title, or URL if applicable..."
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-[#E8E8E8] bg-[#F7F7F8] focus:bg-white focus:outline-none focus:border-[#151515]"
+                    />
+                  </div>
+                  <a
+                    href={composedMailtoHref()}
+                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-[#151515] hover:bg-[#2c2c2c] text-white text-sm font-medium transition-colors"
+                  >
+                    <Mail className="w-4 h-4 text-[#E53935]" />
+                    <span>Open in Email Client ({SITE_CONFIG.supportEmail})</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RELATED POLICY & SUPPORT LINKS */}
+        <div className="mt-12 pt-8 border-t border-[#E8E8E8] grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <button
+            type="button"
+            onClick={() => navigate('/corrections')}
+            className="p-4 rounded-xl bg-[#F7F7F8] hover:bg-[#EFEFF1] border border-[#E8E8E8] text-left transition-colors cursor-pointer"
+          >
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#E53935]">
+              Content Policy
+            </span>
+            <p className="mt-1 text-sm font-semibold text-[#151515]">
+              Corrections & Content Removal →
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/sources')}
+            className="p-4 rounded-xl bg-[#F7F7F8] hover:bg-[#EFEFF1] border border-[#E8E8E8] text-left transition-colors cursor-pointer"
+          >
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#E53935]">
+              Transparency
+            </span>
+            <p className="mt-1 text-sm font-semibold text-[#151515]">
+              News Sources & Attribution →
+            </p>
+          </button>
+
+          <a
+            href={SITE_CONFIG.privacyPolicyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-4 rounded-xl bg-[#F7F7F8] hover:bg-[#EFEFF1] border border-[#E8E8E8] text-left transition-colors block"
+          >
+            <span className="text-xs font-semibold uppercase tracking-wider text-[#E53935]">
+              Official Policy
+            </span>
+            <p className="mt-1 text-sm font-semibold text-[#151515] flex items-center justify-between">
+              <span>Privacy Policy</span>
+              <ExternalLink className="w-3.5 h-3.5 text-[#626262]" />
+            </p>
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// PAGE 4: NEWS SOURCES PAGE (/sources)
+// ============================================================================
+function SourcesPage({ navigate }) {
+  const sections = [
+    {
+      title: '1. How News Content is Discovered',
+      content:
+        'News Teen75 operates as a news aggregation application. Rather than producing original newsroom reporting, the application surfaces publicly accessible news headlines, summaries, and video updates across categories so readers can discover stories in one place.',
+      verificationNote:
+        'Owner Verification Note: Before production release, confirm whether feeds are ingested via public RSS/Atom feeds, publisher APIs, or curated links so this paragraph reflects your exact technical pipeline.',
+    },
+    {
+      title: '2. Original Publishers and Authors',
+      content:
+        'All third-party articles, headlines, photographs, and videos displayed or linked through News Teen75 remain the intellectual property and editorial responsibility of their respective original publishers and authors. News Teen75 does not claim ownership over third-party publisher content.',
+    },
+    {
+      title: '3. External News Links',
+      content:
+        'When users select an article to read the full story, News Teen75 directs them to the original publisher’s web page or source URL where applicable.Original publishers control the content, advertisements, and privacy practices on their respective external websites.',
+    },
+    {
+      title: '4. Publication Dates & Metadata',
+      content:
+        'News Teen75 strives to display accurate source attribution labels and publication timestamps as provided by the underlying feed or source metadata.',
+    },
+    {
+      title: '5. Third-Party Videos',
+      content:
+        'Short-form news videos accessible within the application are sourced from third-party video platforms or publisher channels. Rights and editorial responsibility remain with the respective creators and publishing entities.',
+    },
+    {
+      title: '6. Content Correction & Publisher Requests',
+      content:
+        'Publishers, journalists, or readers who wish to request source attribution updates, report broken links, or request removal of indexed links from News Teen75 can contact the owner directly by email.',
+    },
+  ];
+
+  return (
+    <div className="py-14 md:py-20 bg-white">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="pb-10 border-b border-[#E8E8E8]">
+          <span className="text-xs font-semibold uppercase tracking-widest text-[#E53935]">
+            TRANSPARENCY & ATTRIBUTION
+          </span>
+          <h1 className="mt-2 font-serif text-4xl sm:text-5xl font-bold text-[#151515] tracking-tight">
+            News Sources & Content Transparency
+          </h1>
+          <p className="mt-4 text-lg text-[#626262] leading-relaxed">
+            News Teen75 aggregates content from third-party publishers where applicable. This page
+            explains how external news links, publisher attributions, and content enquiries are
+            handled.
+          </p>
+        </div>
+
+        <div className="mt-10 space-y-6">
+          {sections.map((sec) => (
+            <div
+              key={sec.title}
+              className="p-6 rounded-xl bg-white border border-[#E8E8E8]"
+            >
+              <h2 className="font-serif text-xl font-bold text-[#151515]">{sec.title}</h2>
+              <p className="mt-2.5 text-sm sm:text-base text-[#626262] leading-relaxed">
+                {sec.content}
+              </p>
+              {sec.verificationNote && (
+                <div className="mt-4 p-3.5 rounded-lg bg-[#F7F7F8] border border-[#E8E8E8] flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-[#E53935] shrink-0 mt-0.5" />
+                  <p className="text-xs text-[#626262] leading-relaxed">{sec.verificationNote}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Contact Box for Content Enquiries */}
+        <div className="mt-10 p-6 sm:p-8 rounded-2xl bg-[#F7F7F8] border border-[#E8E8E8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div>
+            <h3 className="font-serif text-xl font-bold text-[#151515]">
+              Publisher & Content Enquiries
+            </h3>
+            <p className="mt-1 text-sm text-[#626262]">
+              Contact Owner <strong>{SITE_CONFIG.ownerName}</strong> at{' '}
+              <a
+                href={`mailto:${SITE_CONFIG.supportEmail}`}
+                className="text-[#E53935] font-medium underline"
+              >
+                {SITE_CONFIG.supportEmail}
+              </a>
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href={`mailto:${SITE_CONFIG.supportEmail}?subject=Content%20or%20Source%20Enquiry%20-%20News%20Teen75`}
+              className="px-5 py-2.5 rounded-lg bg-[#151515] hover:bg-[#2c2c2c] text-white text-sm font-medium transition-colors"
+            >
+              Email Support
+            </a>
+            <button
+              type="button"
+              onClick={() => navigate('/corrections')}
+              className="px-5 py-2.5 rounded-lg bg-white hover:bg-[#EFEFF1] text-[#151515] border border-[#E8E8E8] text-sm font-medium transition-colors cursor-pointer"
+            >
+              Corrections Policy
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// PAGE 5: CORRECTIONS PAGE (/corrections)
+// ============================================================================
+function CorrectionsPage({ navigate }) {
+  const concernTypes = [
+    {
+      title: 'Incorrect Article Information',
+      desc: 'Mismatched headlines, category tags, or truncated summaries displayed in the aggregator feed.',
+    },
+    {
+      title: 'Missing Source Attribution',
+      desc: 'Any item where the original publisher name or source label is unclear or missing.',
+    },
+    {
+      title: 'Broken Original-Source Links',
+      desc: 'External links that fail to direct the reader to the original publisher’s webpage.',
+    },
+    {
+      title: 'Copyright Concerns',
+      desc: 'Notifications from copyright owners or authorized representatives regarding indexed material.',
+    },
+    {
+      title: 'Content Removal Requests',
+      desc: 'Requests from publishers or individuals to remove specific aggregated links or video references.',
+    },
+  ];
+
+  return (
+    <div className="py-14 md:py-20 bg-white">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="pb-10 border-b border-[#E8E8E8]">
+          <span className="text-xs font-semibold uppercase tracking-widest text-[#E53935]">
+            ACCOUNTABILITY & REDRESSAL
+          </span>
+          <h1 className="mt-2 font-serif text-4xl sm:text-5xl font-bold text-[#151515] tracking-tight">
+            Corrections & Content Concerns
+          </h1>
+          <p className="mt-4 text-lg text-[#626262] leading-relaxed">
+            News Teen75 is committed to maintaining accurate source links and respectful
+            attribution. Learn how to report an issue or request a content update below.
+          </p>
+        </div>
+
+        {/* What You Can Report */}
+        <div className="mt-10">
+          <h2 className="font-serif text-2xl font-bold text-[#151515]">
+            When to Contact News Teen75
+          </h2>
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {concernTypes.map((item) => (
+              <div
+                key={item.title}
+                className="p-5 rounded-xl bg-white border border-[#E8E8E8]"
+              >
+                <h3 className="text-base font-semibold text-[#151515]">{item.title}</h3>
+                <p className="mt-1.5 text-sm text-[#626262] leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Useful Information Checklist */}
+        <div className="mt-10 p-6 sm:p-8 rounded-2xl bg-[#F7F7F8] border border-[#E8E8E8]">
+          <h2 className="font-serif text-2xl font-bold text-[#151515]">
+            Information to Include in Your Request
+          </h2>
+          <p className="mt-2 text-sm text-[#626262]">
+            To help us locate the relevant item inside News Teen75 quickly, please include the
+            following details in your email:
+          </p>
+
+          <ul className="mt-5 space-y-3">
+            {[
+              {
+                label: 'Article title',
+                detail: 'The exact headline or video title as shown in the News Teen75 app.',
+              },
+              {
+                label: 'Article URL',
+                detail: 'The link to the original article or external source URL, if available.',
+              },
+              {
+                label: 'Description of the issue',
+                detail:
+                  'A clear explanation of the correction, attribution update, broken link, or removal requested.',
+              },
+            ].map((req) => (
+              <li
+                key={req.label}
+                className="p-4 rounded-xl bg-white border border-[#E8E8E8] flex items-start gap-3"
+              >
+                <CheckCircle2 className="w-5 h-5 text-[#E53935] shrink-0 mt-0.5" />
+                <div>
+                  <span className="text-sm font-semibold text-[#151515] block">{req.label}</span>
+                  <span className="text-xs text-[#626262]">{req.detail}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-6 pt-6 border-t border-[#E8E8E8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <span className="text-xs uppercase tracking-wider text-[#626262] block">
+                Official Contact Email
+              </span>
+              <a
+                href={`mailto:${SITE_CONFIG.supportEmail}?subject=Correction%20or%20Content%20Concern%20-%20News%20Teen75&body=Article%20Title%3A%20%0AArticle%20URL%3A%20%0ADescription%20of%20the%20issue%3A%20`}
+                className="text-lg font-bold text-[#E53935] underline hover:text-[#151515]"
+              >
+                {SITE_CONFIG.supportEmail}
+              </a>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={`mailto:${SITE_CONFIG.supportEmail}?subject=Correction%20or%20Content%20Concern%20-%20News%20Teen75&body=Article%20Title%3A%20%0AArticle%20URL%3A%20%0ADescription%20of%20the%20issue%3A%20`}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#E53935] hover:bg-[#d32f2f] text-white text-sm font-medium transition-colors"
+              >
+                <Mail className="w-4 h-4" />
+                <span>Submit Correction by Email</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => navigate('/contact')}
+                className="px-4 py-2.5 rounded-lg bg-white hover:bg-[#EFEFF1] text-[#151515] border border-[#E8E8E8] text-sm font-medium transition-colors cursor-pointer"
+              >
+                Contact Page
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// PAGE 6: TERMS OF USE PAGE (/terms)
+// ============================================================================
+function TermsPage({ navigate }) {
+  const clauses = [
+    {
+      title: '1. Website and App Usage',
+      body: 'By accessing the News Teen75 website or using the News Teen75 Android application (package ID: com.newsteen75.app), you agree to use the service lawfully and for personal, non-commercial news discovery purposes.',
+    },
+    {
+      title: '2. Third-Party News Content',
+      body: 'News Teen75 is a news aggregation service operated by Gautam Singh. The application displays headlines, links, and short video content originating from third-party publishers and sources. News Teen75 does not claim editorial authorship over third-party news articles.',
+    },
+    {
+      title: '3. Original Publisher Ownership',
+      body: 'All trademarks, service marks, trade names, logos, article texts, photographs, and videos belong to their respective original publishers and copyright holders. Users must respect the copyright and terms of service of the original source websites they visit.',
+    },
+    {
+      title: '4. External Links',
+      body: 'The application and website contain links to external third-party websites. News Teen75 does not control and is not responsible for the availability, accuracy, content, policies, or practices of external websites.',
+    },
+    {
+      title: '5. User Responsibilities',
+      body: 'Users agree not to misuse the application, attempt unauthorized access to service infrastructure, scrape aggregated feeds, or interfere with the normal operation of News Teen75.',
+    },
+    {
+      title: '6. Privacy Policy Reference',
+      body: 'Use of News Teen75 is also governed by our official Privacy Policy, which explains how data is handled in the application.',
+    },
+    {
+      title: '7. Contact Information',
+      body: `For any questions regarding these Terms of Use, please contact Owner ${SITE_CONFIG.ownerName} at ${SITE_CONFIG.supportEmail} (${SITE_CONFIG.country}).`,
+    },
+  ];
+
+  return (
+    <div className="py-14 md:py-20 bg-white">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="pb-10 border-b border-[#E8E8E8]">
+          <span className="text-xs font-semibold uppercase tracking-widest text-[#E53935]">
+            LEGAL & USAGE TERMS
+          </span>
+          <h1 className="mt-2 font-serif text-4xl sm:text-5xl font-bold text-[#151515] tracking-tight">
+            Terms of Use
+          </h1>
+          <p className="mt-4 text-base text-[#626262] leading-relaxed">
+            Clear terms governing the use of the News Teen75 website and Android application (
+            <code className="font-mono text-xs text-[#151515]">{SITE_CONFIG.androidPackage}</code>).
+          </p>
+        </div>
+
+        {/* Owner Verification Notice */}
+        <div className="mt-8 p-4 rounded-xl bg-[#F7F7F8] border border-[#E8E8E8] flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-[#E53935] shrink-0 mt-0.5" />
+          <div className="text-xs text-[#626262] leading-relaxed">
+            <strong className="text-[#151515] block mb-0.5">
+              Owner Verification Note Before Publishing:
+            </strong>
+            Please review these general terms and confirm whether you wish to specify a particular
+            governing jurisdiction within India, age eligibility criteria, or specific API platform
+            terms prior to final production release.
+          </div>
+        </div>
+
+        <div className="mt-8 space-y-6">
+          {clauses.map((clause) => (
+            <div
+              key={clause.title}
+              className="p-6 rounded-xl bg-white border border-[#E8E8E8]"
+            >
+              <h2 className="font-serif text-xl font-bold text-[#151515]">{clause.title}</h2>
+              <p className="mt-2 text-sm sm:text-base text-[#626262] leading-relaxed">
+                {clause.body}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-10 pt-6 border-t border-[#E8E8E8] flex flex-wrap items-center justify-between gap-4 text-sm">
+          <a
+            href={SITE_CONFIG.privacyPolicyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 font-medium text-[#151515] underline hover:text-[#E53935]"
+          >
+            <span>View Official Privacy Policy</span>
+            <ExternalLink className="w-4 h-4" />
+          </a>
+
+          <button
+            type="button"
+            onClick={() => navigate('/contact')}
+            className="px-5 py-2.5 rounded-lg bg-[#151515] hover:bg-[#2c2c2c] text-white text-sm font-medium transition-colors cursor-pointer"
+          >
+            Contact Owner ({SITE_CONFIG.supportEmail})
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// GOOGLE PLAY COMPLIANCE & NEXT.JS IMPLEMENTATION REPORT MODAL
+// ============================================================================
+function ComplianceAndReportModal({ isOpen, onClose, currentPath, navigate }) {
+  const [activeTab, setActiveTab] = useState('checklist');
+  const [domainInput, setDomainInput] = useState('https://newsteen75.vercel.app');
+
+  if (!isOpen) return null;
+
+  const cleanDomain = domainInput.replace(/\/+$/, '');
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="compliance-modal-title"
+    >
+      <div className="bg-white border border-[#E8E8E8] rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-xl">
+        {/* Modal Header */}
+        <div className="px-6 py-4 bg-[#F7F7F8] border-b border-[#E8E8E8] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-[#E53935]" />
+            <h2 id="compliance-modal-title" className="font-serif text-lg font-bold text-[#151515]">
+              Google Play Compliance & Next.js Deployment Hub
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[#626262] hover:text-[#151515] hover:bg-white cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="px-6 pt-3 bg-[#F7F7F8] border-b border-[#E8E8E8] flex flex-wrap gap-2">
+          {[
+            { id: 'checklist', label: '1. Play Console URLs & Checklist' },
+            { id: 'privacy', label: '2. Privacy Policy Audit' },
+            { id: 'nextjs', label: '3. Next.js App Router Structure & SEO' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 text-xs font-semibold rounded-t-lg border-t border-x transition-colors cursor-pointer ${
+                activeTab === tab.id
+                  ? 'bg-white text-[#151515] border-[#E8E8E8]'
+                  : 'bg-transparent text-[#626262] border-transparent hover:text-[#151515]'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Content Body */}
+        <div className="p-6 overflow-y-auto space-y-6 text-sm">
+          {activeTab === 'checklist' && (
+            <div className="space-y-6">
+              <div className="p-4 rounded-xl bg-[#F7F7F8] border border-[#E8E8E8]">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-[#151515] mb-1.5">
+                  Preview Your Deployed Vercel Domain URLs:
+                </label>
+                <input
+                  type="text"
+                  value={domainInput}
+                  onChange={(e) => setDomainInput(e.target.value)}
+                  className="w-full px-3 py-2 text-sm font-mono bg-white border border-[#E8E8E8] rounded-lg"
+                  placeholder="https://your-domain.vercel.app"
+                />
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
+                  <div className="p-2 bg-white rounded border border-[#E8E8E8]">
+                    <span className="text-[#626262] block">1. Homepage URL:</span>
+                    <span className="text-[#151515] font-semibold">{cleanDomain}/</span>
+                  </div>
+                  <div className="p-2 bg-white rounded border border-[#E8E8E8]">
+                    <span className="text-[#E53935] font-sans font-semibold block">
+                      2. Contact Us URL (Play Console Declaration):
+                    </span>
+                    <span className="text-[#151515] font-semibold">{cleanDomain}/contact</span>
+                  </div>
+                  <div className="p-2 bg-white rounded border border-[#E8E8E8]">
+                    <span className="text-[#626262] block">3. About Us URL:</span>
+                    <span className="text-[#151515]">{cleanDomain}/about</span>
+                  </div>
+                  <div className="p-2 bg-white rounded border border-[#E8E8E8]">
+                    <span className="text-[#626262] block">4. News Sources URL:</span>
+                    <span className="text-[#151515]">{cleanDomain}/sources</span>
+                  </div>
+                  <div className="p-2 bg-white rounded border border-[#E8E8E8]">
+                    <span className="text-[#626262] block">5. Existing Privacy Policy:</span>
+                    <span className="text-[#151515]">{SITE_CONFIG.privacyPolicyUrl}</span>
+                  </div>
+                  <div className="p-2 bg-white rounded border border-[#E8E8E8]">
+                    <span className="text-[#626262] block">6. Owner Photo Asset Path:</span>
+                    <span className="text-[#151515]">/public/images/gautam-singh.jpg</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-serif text-lg font-bold text-[#151515]">
+                  Google Play Console Update Checklist (News & Magazines Policy)
+                </h3>
+                <p className="text-xs text-[#626262] mt-1">
+                  Important: Website deployment alone does not complete compliance. Follow these
+                  exact steps in both your Android app and Play Console:
+                </p>
+                <ul className="mt-3 space-y-2.5">
+                  {[
+                    'Deploy this project to Vercel and verify that /contact loads over HTTPS without login.',
+                    'Place your original photograph at /public/images/gautam-singh.jpg before running the final production deployment.',
+                    'Inside the Android app (com.newsteen75.app), add a clearly visible link to your deployed /contact URL and newsteen75@gmail.com in the Settings/About screen.',
+                    'In Google Play Console -> App Content -> News and Magazines declaration, paste the exact HTTPS /contact URL and confirm ownership details match "Gautam Singh".',
+                    'Ensure every aggregated article inside the Android app visibly attributes the original publisher source.',
+                  ].map((step, i) => (
+                    <li
+                      key={i}
+                      className="p-3 rounded-lg bg-[#F7F7F8] border border-[#E8E8E8] flex items-start gap-2.5 text-xs text-[#151515]"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-[#E53935] shrink-0 mt-0.5" />
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'privacy' && (
+            <div className="space-y-4">
+              <h3 className="font-serif text-lg font-bold text-[#151515]">
+                Privacy Policy Link & Alignment Check
+              </h3>
+              <p className="text-xs text-[#626262] leading-relaxed">
+                Official External Privacy Policy URL:{' '}
+                <a
+                  href={SITE_CONFIG.privacyPolicyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#E53935] underline font-mono"
+                >
+                  {SITE_CONFIG.privacyPolicyUrl}
+                </a>
+              </p>
+              <div className="p-4 rounded-xl bg-[#F7F7F8] border border-[#E8E8E8] space-y-2 text-xs text-[#151515]">
+                <p className="font-semibold">Verification Summary:</p>
+                <ul className="list-disc pl-5 space-y-1.5 text-[#626262]">
+                  <li>
+                    This website links directly to{' '}
+                    <code className="text-[#151515]">{SITE_CONFIG.privacyPolicyUrl}</code> from the
+                    Footer, Contact Us page, and Terms of Use page without altering or duplicating
+                    your published policy.
+                  </li>
+                  <li>
+                    <strong className="text-[#151515]">Pre-submission Check for Owner:</strong>{' '}
+                    Verify that your hosted privacy policy on{' '}
+                    <code className="text-[#151515]">newsteen75-privacy-policy.vercel.app</code>{' '}
+                    explicitly lists the same contact email (<code className="text-[#151515]">newsteen75@gmail.com</code>), owner/entity name (<code className="text-[#151515]">Gautam Singh</code> / <code className="text-[#151515]">News Teen75</code>), and disclosures for saved bookmarks or video playback used in <code className="text-[#151515]">com.newsteen75.app</code>.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'nextjs' && (
+            <div className="space-y-4">
+              <h3 className="font-serif text-lg font-bold text-[#151515]">
+                Next.js App Router Architecture & Active Route SEO
+              </h3>
+              <div className="p-4 rounded-xl bg-[#F7F7F8] border border-[#E8E8E8] font-mono text-xs">
+                <div className="text-[#626262] mb-1">
+                  Active Route: <strong className="text-[#E53935]">{currentPath}</strong>
+                </div>
+                <div className="text-[#151515]">
+                  Title: {ROUTE_SEO[currentPath]?.title}
+                </div>
+                <div className="text-[#626262] mt-1">
+                  Description: {ROUTE_SEO[currentPath]?.description}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-white border border-[#E8E8E8] text-xs font-mono space-y-1 text-[#151515]">
+                <div className="font-sans font-semibold text-sm mb-2">
+                  Next.js Project File Organization (Vercel Ready):
+                </div>
+                <div>├── public/images/gautam-singh.jpg (Place original owner photo here)</div>
+                <div>├── src/config/site.ts (SITE_URL, CONTACT_URL, SUPPORT_EMAIL, OWNER_NAME)</div>
+                <div>├── src/app/layout.tsx (CSS variables, Metadata, Sticky Header & Footer)</div>
+                <div>├── src/app/page.tsx (Home /)</div>
+                <div>├── src/app/about/page.tsx (About Us /about)</div>
+                <div>├── src/app/contact/page.tsx (Contact Us /contact — Play Compliance)</div>
+                <div>├── src/app/sources/page.tsx (News Sources /sources)</div>
+                <div>├── src/app/corrections/page.tsx (Corrections /corrections)</div>
+                <div>├── src/app/terms/page.tsx (Terms of Use /terms)</div>
+                <div>├── src/app/sitemap.ts & src/app/robots.ts</div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Modal Footer */}
+        <div className="px-6 py-3 bg-[#F7F7F8] border-t border-[#E8E8E8] flex items-center justify-between">
+          <span className="text-xs text-[#626262]">
+            Package: <code className="font-mono text-[#151515]">{SITE_CONFIG.androidPackage}</code>
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-1.5 rounded-lg bg-[#151515] text-white text-xs font-medium cursor-pointer"
+          >
+            Close Inspector
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// MAIN APPLICATION SHELL (Header, Multi-Page Router, Footer)
+// ============================================================================
+export default function App() {
+  const [currentPath, setCurrentPath] = useState('/');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [customPhotoUrl, setCustomPhotoUrl] = useState(null);
+  const [complianceModalOpen, setComplianceModalOpen] = useState(false);
+
+  // Sync document title & scroll to top on navigation
+  useEffect(() => {
+    const seo = ROUTE_SEO[currentPath] || ROUTE_SEO['/'];
+    document.title = seo.title;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPath]);
+
+  const navigate = (path) => {
+    setCurrentPath(path);
+    setMobileMenuOpen(false);
+  };
+
+  const primaryNavLinks = [
+    { label: 'Home', path: '/' },
+    { label: 'About', path: '/about' },
+    { label: 'News Sources', path: '/sources' },
+    { label: 'Contact', path: '/contact' },
+  ];
+
+  return (
+    <div
+      style={{
+        '--bg-primary': '#FFFFFF',
+        '--text-primary': '#151515',
+        '--text-secondary': '#626262',
+        '--accent-red': '#E53935',
+        '--bg-soft': '#F7F7F8',
+        '--border-color': '#E8E8E8',
+      }}
+      className="min-h-screen flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans antialiased selection:bg-[#E53935] selection:text-white"
+    >
+      {/* SUBTLE TOP COMPLIANCE & VERIFICATION BAR */}
+      <div className="bg-[#F7F7F8] border-b border-[#E8E8E8] text-xs">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-[#626262]">
+            <span className="w-2 h-2 rounded-full bg-[#E53935]" />
+            <span>
+              Official Website • <strong className="text-[#151515]">News Teen75</strong> (Owner:{' '}
+              <strong className="text-[#151515]">{SITE_CONFIG.ownerName}</strong>)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <a
+              href={`mailto:${SITE_CONFIG.supportEmail}`}
+              className="hidden sm:inline-flex items-center gap-1 text-[#151515] hover:text-[#E53935] font-medium"
+            >
+              <Mail className="w-3.5 h-3.5 text-[#E53935]" />
+              <span>{SITE_CONFIG.supportEmail}</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={() => setComplianceModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-white border border-[#E8E8E8] text-[#151515] hover:border-[#151515] font-medium transition-colors cursor-pointer"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-[#E53935]" />
+              <span>Play Compliance & URLs</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 1: STICKY NAVIGATION HEADER */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-xs border-b border-[#E8E8E8]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          {/* Official Clean Text Wordmark */}
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="flex items-center gap-1.5 text-left group cursor-pointer focus:outline-none"
+            aria-label="News Teen75 Home"
+          >
+            <span className="font-serif text-2xl font-bold tracking-tight text-[#151515]">
+              News Teen<span className="text-[#E53935]">75</span>
+            </span>
+          </button>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-8" aria-label="Main Navigation">
+            {primaryNavLinks.map((item) => {
+              const isActive = currentPath === item.path;
+              return (
+                <button
+                  key={item.path}
+                  type="button"
+                  onClick={() => navigate(item.path)}
+                  className={`text-sm font-medium transition-colors py-1 cursor-pointer ${
+                    isActive
+                      ? 'text-[#151515] border-b-2 border-[#E53935]'
+                      : 'text-[#626262] hover:text-[#151515]'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Desktop Quick Action */}
+          <div className="hidden md:flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/contact')}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#151515] hover:bg-[#2c2c2c] text-white text-xs font-medium transition-colors cursor-pointer"
+            >
+              <Mail className="w-3.5 h-3.5 text-[#E53935]" />
+              <span>Contact Support</span>
+            </button>
+          </div>
+
+          {/* Compact Mobile Menu Toggle */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg text-[#151515] hover:bg-[#F7F7F8] border border-[#E8E8E8] cursor-pointer"
+            aria-expanded={mobileMenuOpen}
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <nav
+            className="md:hidden bg-white border-b border-[#E8E8E8] px-4 pt-2 pb-5 space-y-1"
+            aria-label="Mobile Navigation"
+          >
+            {[
+              { label: 'Home', path: '/' },
+              { label: 'About Us', path: '/about' },
+              { label: 'News Sources', path: '/sources' },
+              { label: 'Contact Us', path: '/contact' },
+              { label: 'Corrections', path: '/corrections' },
+              { label: 'Terms of Use', path: '/terms' },
+            ].map((item) => {
+              const isActive = currentPath === item.path;
+              return (
+                <button
+                  key={item.path}
+                  type="button"
+                  onClick={() => navigate(item.path)}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium flex items-center justify-between cursor-pointer ${
+                    isActive
+                      ? 'bg-[#F7F7F8] text-[#151515] font-semibold'
+                      : 'text-[#626262] hover:bg-[#F7F7F8] hover:text-[#151515]'
+                  }`}
+                >
+                  <span>{item.label}</span>
+                  {isActive && <span className="w-2 h-2 rounded-full bg-[#E53935]" />}
+                </button>
+              );
+            })}
+            <div className="pt-3 mt-2 border-t border-[#E8E8E8] px-3">
+              <a
+                href={`mailto:${SITE_CONFIG.supportEmail}`}
+                className="inline-flex items-center gap-2 text-xs font-medium text-[#E53935]"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>{SITE_CONFIG.supportEmail}</span>
+              </a>
+            </div>
+          </nav>
+        )}
+      </header>
+
+      {/* MAIN PAGE CONTENT */}
+      <main className="flex-1">
+        {currentPath === '/' && (
+          <HomePage
+            navigate={navigate}
+            customPhotoUrl={customPhotoUrl}
+            onUploadPhoto={setCustomPhotoUrl}
+            onClearPhoto={() => setCustomPhotoUrl(null)}
+          />
+        )}
+        {currentPath === '/about' && (
+          <AboutPage
+            navigate={navigate}
+            customPhotoUrl={customPhotoUrl}
+            onUploadPhoto={setCustomPhotoUrl}
+            onClearPhoto={() => setCustomPhotoUrl(null)}
+          />
+        )}
+        {currentPath === '/contact' && <ContactPage navigate={navigate} />}
+        {currentPath === '/sources' && <SourcesPage navigate={navigate} />}
+        {currentPath === '/corrections' && <CorrectionsPage navigate={navigate} />}
+        {currentPath === '/terms' && <TermsPage navigate={navigate} />}
+      </main>
+
+      {/* CONSISTENT EDITORIAL FOOTER */}
+      <footer className="bg-[#F7F7F8] border-t border-[#E8E8E8]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 pb-12 border-b border-[#E8E8E8]">
+            {/* Brand & Owner Identity Column */}
+            <div className="md:col-span-5">
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="font-serif text-2xl font-bold tracking-tight text-[#151515] cursor-pointer"
+              >
+                News Teen<span className="text-[#E53935]">75</span>
+              </button>
+              <p className="mt-3 text-sm text-[#626262] leading-relaxed max-w-sm">
+                An Android news aggregation application designed to help readers discover news,
+                explore trending topics, and watch short videos across categories in one place.
+              </p>
+              <div className="mt-5 space-y-1 text-xs text-[#626262]">
+                <p>
+                  Owner: <strong className="text-[#151515]">{SITE_CONFIG.ownerName}</strong> (
+                  {SITE_CONFIG.country})
+                </p>
+                <p>
+                  Android Package:{' '}
+                  <code className="font-mono text-[#151515]">{SITE_CONFIG.androidPackage}</code>
+                </p>
+                <p>
+                  Support Email:{' '}
+                  <a
+                    href={`mailto:${SITE_CONFIG.supportEmail}`}
+                    className="text-[#151515] underline hover:text-[#E53935]"
+                  >
+                    {SITE_CONFIG.supportEmail}
+                  </a>
+                </p>
+              </div>
+            </div>
+
+            {/* Navigation Column */}
+            <div className="md:col-span-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#151515]">
+                Navigation
+              </h3>
+              <ul className="mt-4 space-y-2.5 text-sm">
+                {[
+                  { label: 'Home', path: '/' },
+                  { label: 'About Us', path: '/about' },
+                  { label: 'Contact Us', path: '/contact' },
+                  { label: 'News Sources', path: '/sources' },
+                ].map((link) => (
+                  <li key={link.path}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(link.path)}
+                      className="text-[#626262] hover:text-[#151515] transition-colors cursor-pointer"
+                    >
+                      {link.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Policies & Compliance Column */}
+            <div className="md:col-span-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#151515]">
+                Policies & Support
+              </h3>
+              <ul className="mt-4 space-y-2.5 text-sm">
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/corrections')}
+                    className="text-[#626262] hover:text-[#151515] transition-colors cursor-pointer"
+                  >
+                    Corrections & Content Concerns
+                  </button>
+                </li>
+                <li>
+                  <a
+                    href={SITE_CONFIG.privacyPolicyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[#626262] hover:text-[#151515] transition-colors"
+                  >
+                    <span>Privacy Policy</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/terms')}
+                    className="text-[#626262] hover:text-[#151515] transition-colors cursor-pointer"
+                  >
+                    Terms of Use
+                  </button>
+                </li>
+                <li className="pt-2">
+                  <a
+                    href={`mailto:${SITE_CONFIG.supportEmail}`}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#E53935] hover:underline"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>{SITE_CONFIG.supportEmail}</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#626262]">
+            <p>
+              © {new Date().getFullYear()} {SITE_CONFIG.brandName}. Operated by{' '}
+              {SITE_CONFIG.ownerName}, {SITE_CONFIG.country}.
+            </p>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => navigate('/contact')}
+                className="hover:text-[#151515] underline cursor-pointer"
+              >
+                Public Contact (/contact)
+              </button>
+              <span>•</span>
+              <a
+                href={SITE_CONFIG.privacyPolicyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#151515] underline"
+              >
+                Privacy Policy
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* GOOGLE PLAY COMPLIANCE & DEPLOYMENT MODAL */}
+      <ComplianceAndReportModal
+        isOpen={complianceModalOpen}
+        onClose={() => setComplianceModalOpen(false)}
+        currentPath={currentPath}
+        navigate={navigate}
+      />
+    </div>
+  );
+}
